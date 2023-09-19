@@ -8,6 +8,7 @@ const server = http.createServer(app);
 const io = socketio(server); // to configure our socket io library to work with our server for that we make the server
 const port = process.env.PORT || 3000;
 const path = require("path");
+const Filter = require("bad-words"); // an npm module that detect the bad and profane word
 const publicPath = path.join(__dirname, "../public");
 app.use(express.static(publicPath));
 
@@ -19,8 +20,22 @@ io.on("connection", (socket) => {
   // L155 --> the socket parameter is an object that come from the each client separately so if we have 5 client the function will run 5 times and so on
   console.log("New WebSocket connection");
   socket.emit("WelcomeMessage", "Welcome to our server !");
-  socket.on("sendMessage", (message) => {
-    io.emit("sendMessage",message);
+  socket.broadcast.emit("WelcomeMessage", " A new user has joined"); // we use broadcast to send this message to all users except the socket object
+  socket.on("sendMessage", (message, callback) => {
+    const filter = new Filter();
+    if (filter.isProfane(message)) return callback("Profanity is not allowed ");
+    io.emit("sendMessage", message);
+    //L159 acknowledgement
+    callback("Delivered!");
+  });
+  socket.on("send-location", (location, callback) => {
+    io.emit("send-location", location);
+    callback();
+  });
+
+  socket.on("disconnect", () => {
+    // a build in event if the socket user is leave the server (close the page )
+    io.emit("WelcomeMessage", "A user has left");
   });
 });
 
