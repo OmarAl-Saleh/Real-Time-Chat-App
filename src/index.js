@@ -11,6 +11,7 @@ const path = require("path");
 const Filter = require("bad-words"); // an npm module that detect the bad and profane word
 const publicPath = path.join(__dirname, "../public");
 app.use(express.static(publicPath));
+const { generateMessage, generateLocation } = require("./utils/message");
 
 // server(emit)--> client(received)--countUpdated
 // client(emit) --> server(emit) --increment
@@ -19,23 +20,33 @@ io.on("connection", (socket) => {
   // to work we need also to define the socketio on the client side file such as the html files
   // L155 --> the socket parameter is an object that come from the each client separately so if we have 5 client the function will run 5 times and so on
   console.log("New WebSocket connection");
-  socket.emit("WelcomeMessage", "Welcome to our server !");
-  socket.broadcast.emit("WelcomeMessage", " A new user has joined"); // we use broadcast to send this message to all users except the socket object
+
+  // socket.emit("message", generateMessage("Welcome to our server !"));
+  // socket.broadcast.emit("message", generateMessage(" A new user has joined")); // we use broadcast to send this message to all users except the socket object
+  //L67
+  socket.on("join", ({ username, room }) => {
+    socket.join(room); // this is a build in function to join a room
+    socket.emit("message", generateMessage("Welcome to our server !"));
+    socket.broadcast
+      .to(room)
+      .emit("message", generateMessage(`${username} has joined`)); // we use broadcast to send this message to all users except the socket object
+  });
+
   socket.on("sendMessage", (message, callback) => {
     const filter = new Filter();
     if (filter.isProfane(message)) return callback("Profanity is not allowed ");
-    io.emit("sendMessage", message);
+    io.emit("message", generateMessage(message));
     //L159 acknowledgement
     callback("Delivered!");
   });
   socket.on("send-location", (location, callback) => {
-    io.emit("send-location", location);
+    io.emit("send-location", generateLocation(location));
     callback();
   });
 
   socket.on("disconnect", () => {
     // a build in event if the socket user is leave the server (close the page )
-    io.emit("WelcomeMessage", "A user has left");
+    io.emit("message", generateMessage("A user has left"));
   });
 });
 

@@ -4,13 +4,45 @@ const socket = io();
 // L160 --> Elements: we want customize the buttons and form to be more practical
 // we want enable and disable the buttons and so on
 // we conventionally using dollar sign to know that is a dom we wanna use it
+///*Elements
 const $messageForm = document.querySelector("#message-form");
 const $messageFormInput = document.querySelector("input");
 const $messageFormButton = document.querySelector("#send");
 const $sendLocation = document.querySelector("#send-location");
+const $messages = document.querySelector("#messages");
+//*Templates
+//const messageTemplate = document.querySelector("#message-template").innerHTML; // to access the html code inside the script template code
+const messageTemplate = document.querySelector("#message-template").innerHTML;
+const locationTemplate = document.querySelector("#location-template").innerHTML;
 
-socket.on("WelcomeMessage", (message) => {
+///*Options
+// L167 --> we will use the query string to get the username and room name
+//this code will return the query strings f that object
+// location.search--> this command if you log it it will return the query string for the url that will begin with question mark
+// we use ignore:true to remove the question mark and only access the pure query string
+
+const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true })// we will emit this variable in bottom of the file
+
+socket.on("message", (message) => {
   console.log(message);
+  const html = Mustache.render(messageTemplate, {
+    // this is a mustache object to render our variables
+    // we can here access the variables in dynamic
+    message: message.text,
+    // here we use moment script that we loaded in index.html to customize the time
+    createdAt: moment(message.createdAt).format("h:mm a"),
+  });
+  $messages.insertAdjacentHTML("beforeend", html);
+});
+socket.on("send-location", (location) => {
+  console.log(location);
+  const html = Mustache.render(locationTemplate, {
+    // this is a mustache object to render our variables
+    //we can here access the variables in dynamic
+    url: location.link,
+    createdAt: moment(location.createdAt).format("h:mm a"),
+  });
+  $messages.insertAdjacentHTML("beforeend", html);
 });
 //const form = document.querySelector("form");
 //const message = document.querySelector("input");
@@ -33,9 +65,6 @@ $messageFormButton.addEventListener("click", () => {
     console.log("Message Delivered");
   });
 });
-socket.on("sendMessage", (message) => {
-  console.log(message);
-});
 $sendLocation.addEventListener("click", () => {
   if (!navigator.geolocation)
     // this is an built in API for sharing location the api website is in bookmarks
@@ -53,11 +82,12 @@ $sendLocation.addEventListener("click", () => {
     });
   });
 });
-socket.on("send-location", (location) => {
-  console.log(
-    "https://google.com/maps?q" + location.latitude + "," + location.longitude
-  );
-});
+
+socket.emit("join", { username, room });// here we will process it in back-end
+
+
+
+
 ///* for L155 counter server
 // console.log("the life is difficult");
 // socket.on("countUpdated", (count) => {
