@@ -21,13 +21,16 @@ const locationTemplate = document.querySelector("#location-template").innerHTML;
 // location.search--> this command if you log it it will return the query string for the url that will begin with question mark
 // we use ignore:true to remove the question mark and only access the pure query string
 
-const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true })// we will emit this variable in bottom of the file
+const { username, room } = Qs.parse(location.search, {
+  ignoreQueryPrefix: true,
+}); // we will emit this variable in bottom of the file
 
 socket.on("message", (message) => {
   console.log(message);
   const html = Mustache.render(messageTemplate, {
     // this is a mustache object to render our variables
     // we can here access the variables in dynamic
+    username: message.username,
     message: message.text,
     // here we use moment script that we loaded in index.html to customize the time
     createdAt: moment(message.createdAt).format("h:mm a"),
@@ -39,6 +42,7 @@ socket.on("send-location", (location) => {
   const html = Mustache.render(locationTemplate, {
     // this is a mustache object to render our variables
     //we can here access the variables in dynamic
+    username: location.username,
     url: location.link,
     createdAt: moment(location.createdAt).format("h:mm a"),
   });
@@ -83,10 +87,13 @@ $sendLocation.addEventListener("click", () => {
   });
 });
 
-socket.emit("join", { username, room });// here we will process it in back-end
-
-
-
+socket.emit("join", { username, room }, (error) => {
+  if (error) {
+    alert(error);
+    location.href = "/"; // to redirect the user to the home page
+    //* we also can use it as disconnect button
+  }
+}); // here we will process it in back-end
 
 ///* for L155 counter server
 // console.log("the life is difficult");
