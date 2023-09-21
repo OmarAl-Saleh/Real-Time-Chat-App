@@ -50,6 +50,12 @@ io.on("connection", (socket) => {
     socket.broadcast
       .to(user.room)
       .emit("message", generateMessage(`${user.username} has joined`)); // we use broadcast to send this message to all users except the socket object
+    // L172
+    // we define a new event to customize te sidebar
+    io.to(user.room).emit("roomData", {
+      room: user.room,
+      users:getUsersInRoom(user.room),
+    })
     callback();
   });
 
@@ -77,7 +83,13 @@ io.on("connection", (socket) => {
       io.to(user.room).emit(
         "message",
         generateMessage(`${user.username} has left!`)
+
       );
+      //L172
+      io.to(user.room).emit("roomData", {
+        room: user.room,
+        users:getUsersInRoom(user.room),
+      })
     }
   });
 });

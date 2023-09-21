@@ -14,6 +14,7 @@ const $messages = document.querySelector("#messages");
 //const messageTemplate = document.querySelector("#message-template").innerHTML; // to access the html code inside the script template code
 const messageTemplate = document.querySelector("#message-template").innerHTML;
 const locationTemplate = document.querySelector("#location-template").innerHTML;
+const sidebarTemplate = document.querySelector("#sidebar-template").innerHTML;
 
 ///*Options
 // L167 --> we will use the query string to get the username and room name
@@ -24,6 +25,36 @@ const locationTemplate = document.querySelector("#location-template").innerHTML;
 const { username, room } = Qs.parse(location.search, {
   ignoreQueryPrefix: true,
 }); // we will emit this variable in bottom of the file
+
+// L173
+const autoScroll = () => {
+  // new message element
+  const $newMessage = $messages.lastElementChild; // to return the last message that is new added
+
+  // Height of the new message
+  const newMessagesStyles = getComputedStyle($newMessage); // to return all the styles used on the new message in alphabetical order
+  const newMessageMargin = parseInt(newMessagesStyles.marginBottom); // here to get the margin value
+  const newMessageHeight = $newMessage.offsetHeight + newMessageMargin; // to get the total height of the new message
+
+  // visible height
+  const visibleHeight = $messages.offsetHeight;
+
+  // height of messages container
+  // here we wanna to store the size of all messages
+  const containerHeight = $messages.scrollHeight;
+
+  // how far have i scrolled?
+  //(scrolltop)--> return the distance between the top of file and the top of scroll bar so we add to it the message offset
+  const scrollOffset = $messages.scrollTop + visibleHeight;
+
+  if (containerHeight - newMessageHeight <= scrollOffset) {
+    // we want here to check if the user is in the scrolling in bottom so we need to auto scroll to make it see the new message
+    $messages.scrollTop = $messages.scrollHeight; // to auto scroll down with message send
+    // we can only use the line up to scroll down but we do this process to make a better user experience
+    // so if the user in the bottom of the file we wanna scroll down
+    // and if he not in the bottom like he see history message we will not scroll down
+  }
+};
 
 socket.on("message", (message) => {
   console.log(message);
@@ -36,6 +67,7 @@ socket.on("message", (message) => {
     createdAt: moment(message.createdAt).format("h:mm a"),
   });
   $messages.insertAdjacentHTML("beforeend", html);
+  autoScroll();
 });
 socket.on("send-location", (location) => {
   console.log(location);
@@ -47,7 +79,17 @@ socket.on("send-location", (location) => {
     createdAt: moment(location.createdAt).format("h:mm a"),
   });
   $messages.insertAdjacentHTML("beforeend", html);
+  autoScroll();
 });
+//L172
+socket.on("roomData", ({ room, users }) => {
+  const html = Mustache.render(sidebarTemplate, {
+    room,
+    users,
+  });
+  document.querySelector("#sidebar").innerHTML = html;
+});
+
 //const form = document.querySelector("form");
 //const message = document.querySelector("input");
 $messageForm.addEventListener("submit", (e) => {
